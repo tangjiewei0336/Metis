@@ -1,11 +1,80 @@
 
-# Metis-quantization
+# <center> Metis: Training Large Language Models with Advanced Low-Bit Quantization </center>
+
+This repository provides the official implementation of **Metis**, a framework for stable and efficient training of large language models (LLMs) under **FP8** and **FP4** quantization.
+
+📄 Paper: [Metis: Training Large Language Models with Advanced Low-Bit Quantization](https://arxiv.org/abs/2509.00404)
+
+---
+
+## 🔑 Highlights
+
+* **Fundamental Insight**: Identifies **anisotropy in parameter distributions** as the root cause of instability in low-bit training.
+* **Metis Framework**:
+
+  * **Spectral Decomposition with Random Embedding**: disentangles dominant and long-tail singular components, transforming wide distributions into quantization-friendly forms.
+  * **Adaptive Spectral Learning Rate**: balances updates across spectral modes to capture diverse features.
+  
+* **Efficiency**: The randomized SVD approximation introduces **low overhead** while enabling robust low-bit quantization.
+* **Practical Impact**: Establishes FP8 as a **new standard** and makes FP4 **feasible** for large-scale LLM training.
+
+---
+
+## 📊 Experiments
+
+We evaluate Metis on **GPT-2** (130M and 1.1B parameters) and **Llama-3** (7B parameters) models using the **DCLM dataset** and downstream tasks from **GLUE**.
+
+### FP8 Results
+
+<p align="center">
+  <img src="assert/fp8-loss-1.png" alt="Figure 1a" width="45%"/>
+  <img src="assert/fp8-loss-2.png" alt="Figure 1b" width="45%"/>
+  <br>
+  <em>Figure 1: Training loss comparison for 1B-parameter GPT-2 under FP8 quantization. The direct FP8 baseline shows a persistent loss gap relative to the full-precision FP32 baseline, while Metis based FP8 methods (Metis forward full rank SVD (left) and Metis forward 1\% rank SVD (right)) closely track the FP32 loss trajectory throughout training, effectively eliminating the degradation observed in the direct FP8 case. </em>
+</p>
+
+* **Direct FP8 baselines** suffer from a clear performance gap compared to FP32.
+* **Metis+FP8** closely tracks the FP32 training loss and, in some cases, **surpasses FP32** in test loss and GLUE scores.
+
+### FP4 Results
+
+<p align="center">
+  <img src="assert/0p13b-loss.png" alt="Figure 2a" width="45%"/>
+  <img src="assert/1p1b-loss.png" alt="Figure 2b" width="45%"/>
+  <br>
+  <em>Figure 2: For different GPT-2 : (left) 130M GPT-2 training loss curves. (right) 1B GPT-2 training loss curves. </em>
+</p>
+
+**Results on GPT-2**
+
+* **Direct FP4 (NVFP4 / MXFP4)** baselines fail to converge or show instability.
+* **Metis+FP4** enables **stable training**, with smooth loss curves that align with FP32 baselines.
+* On GLUE tasks, **Metis narrows the performance gap** with FP32 and occasionally matches it in downstream tasks (e.g., SST-2, MRPC).
+
+<p align="center">
+  <img src="assert/llama-loss.png" alt="Figure 3" width="45%"/>
+  <br>
+  <em>Figure 3: Llama-3 model training loss curves. </em>
+</p>
+
+**Results on Llama-3**
+
+* Our **Llama-3 (7B)** training with Metis is **still ongoing**, and we will continuously update the results.  
+* Current results indicate that **the loss gap between Metis+FP8/FP4 and FP32 is less than 1%**, demonstrating strong potential for scaling Metis to large-scale models.  
+
+---
+
+
+
+## ⚙️ Usage
 
 Metis implements FP4/FP8 quantization strategies through simulation. The implementation details can be found in the ```Metis/quant.py```.
 
 The implementation details of Metis can be found in ```Metis/bitlinear.py```.
 
-## Training with the example script
+---
+
+### Training with the example script
 You can train the example GPT-2 model by running the following command:
 
 ```bash
@@ -63,7 +132,9 @@ The following arguments specify the parameters related to Adaptive lr:
                                    # You can define your own scheme in Metis/bitlinear.py
 ```
 
-## Training with your own model
+---
+
+### Training with your own model
 
 Replace the `nn.Linear` layers in your model with `BitLinear` layers. The parameters of BitLinear are the same as above, and you can refer to the usage example below.
 
