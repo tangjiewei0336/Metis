@@ -173,3 +173,12 @@ optimizer = optim.AdamW(
 )  
 ```
 
+## Citation
+```latex
+@article{cao2025metis,
+  title={Metis: Training Large Language Models with Advanced Low-Bit Quantization},
+  author={Cao, Hengjie and Chen, Mengyi and Yang, Yifeng and Huang, Ruijun and Dong, Fang and Zhou, Jixian and Chen, Anrui and Dong, Mingzhi and Wang, Yujiang and Hou, Jinlong and others},
+  journal={arXiv preprint arXiv:2509.00404},
+  year={2025}
+}
+```
