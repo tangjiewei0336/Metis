@@ -5,8 +5,6 @@ This repository provides the official implementation of **Metis**, a framework f
 
 📄 Paper: [Metis: Training Large Language Models with Advanced Low-Bit Quantization](https://arxiv.org/abs/2509.00404)
 
----
-
 ## 🔑 Highlights
 
 * **Fundamental Insight**: Identifies **anisotropy in parameter distributions** as the root cause of instability in low-bit training.
@@ -18,7 +16,7 @@ This repository provides the official implementation of **Metis**, a framework f
 * **Efficiency**: The randomized SVD approximation introduces **low overhead** while enabling robust low-bit quantization.
 * **Practical Impact**: Establishes FP8 as a **new standard** and makes FP4 **feasible** for large-scale LLM training.
 
----
+
 
 ## 📊 Experiments
 
@@ -62,7 +60,7 @@ We evaluate Metis on **GPT-2** (130M and 1.1B parameters) and **Llama-3** (7B pa
 * Our **Llama-3 (7B)** training with Metis is **still ongoing**, and we will continuously update the results.  
 * Current results indicate that **the loss gap between Metis+FP8/FP4 and FP32 is less than 1%**, demonstrating strong potential for scaling Metis to large-scale models.  
 
----
+
 
 
 
@@ -72,7 +70,7 @@ Metis implements FP4/FP8 quantization strategies through simulation. The impleme
 
 The implementation details of Metis can be found in ```Metis/bitlinear.py```.
 
----
+
 
 ### Training with the example script
 You can train the example GPT-2 model by running the following command:
@@ -132,7 +130,7 @@ The following arguments specify the parameters related to Adaptive lr:
                                    # You can define your own scheme in Metis/bitlinear.py
 ```
 
----
+
 
 ### Training with your own model
 
