@@ -11,6 +11,7 @@ python pp_main.py \
     --chkpt-dir /your/checkpoint/dir \
     --dataset-path ./dataset \
     --log-dir /your/log/dir \
+    --tokenizer-path /your/tokenizer/path \
     --tag $TAG \
     --reg-lambda 0 \
     --layers 32 \
