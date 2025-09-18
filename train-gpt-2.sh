@@ -14,11 +14,11 @@ python -m torch.distributed.launch --nproc_per_node $NPROC --master-port $PORT d
     --tokenizer-path /your/tokenizer/path \
     --tag $TAG \
     --reg-lambda 0 \
-    --layers 32 \
-    --embed-dim 4096 \
+    --layers 12 \
+    --embed-dim 768 \
     --max-epochs 3 \
-    --heads 32 \
-    --n-kv-heads 32 \
+    --heads 12 \
+    --n-kv-heads 12 \
     --q-forward-input fp4e2m1b \
     --q-forward-weight fp4e2m1b \
     --q-backward-input fp4e2m1b \
