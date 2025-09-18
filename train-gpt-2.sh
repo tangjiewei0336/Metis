@@ -5,14 +5,13 @@ NPROC=4
 # total batchsize = LOCAL_BATCH_SIZE * GRAD_ACC * NPROC
 
 TAG=your-tag
-PORT=17566
-export CUDA_VISIBLE_DEVICES=4,5,6,7
+PORT=12345
 
 python -m torch.distributed.launch --nproc_per_node $NPROC --master-port $PORT dp_main.py \
-    --model llama \
     --chkpt-dir /your/checkpoint/dir \
     --dataset-path ./dataset \
     --log-dir /your/log/dir \
+    --tokenizer-path /your/tokenizer/path \
     --tag $TAG \
     --reg-lambda 0 \
     --layers 32 \
@@ -34,7 +33,7 @@ python -m torch.distributed.launch --nproc_per_node $NPROC --master-port $PORT d
     --weight-decay 0.1 \
     --lr 1.5e-4 \
     --merged-lr 1.5e-4 \
-    --grad-acc 1 \
+    --grad-acc $GRAD_ACC \
     --lr-warmup-steps 20 \
     --enable-lowbit \
     --enable-backward-svd \
