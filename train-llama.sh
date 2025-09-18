@@ -5,12 +5,9 @@ NPROC=4
 # total batchsize = LOCAL_BATCH_SIZE * GRAD_ACC * NPROC
 
 TAG=your-tag
-PORT=17566
-# export CUDA_VISIBLE_DEVICES=4,5,6,7
-export CUDA_VISIBLE_DEVICES=0,1,2,3
+PORT=12345
 
 python pp_main.py \
-    --model llama \
     --chkpt-dir /your/checkpoint/dir \
     --dataset-path ./dataset \
     --log-dir /your/log/dir \
@@ -35,7 +32,7 @@ python pp_main.py \
     --weight-decay 0.1 \
     --lr 1.5e-4 \
     --merged-lr 1.5e-4 \
-    --grad-acc 10 \
+    --grad-acc $GRAD_ACC \
     --lr-warmup-steps 20 \
     --enable-lowbit \
     --enable-backward-svd \
