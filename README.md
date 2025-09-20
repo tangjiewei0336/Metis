@@ -73,10 +73,11 @@ The implementation details of Metis can be found in ```Metis/bitlinear.py```.
 
 
 ### Training with the example script
-You can train the example GPT-2 model by running the following command:
+You can train the example GPT-2 or Llama model by running the following command:
 
 ```bash
-bash run.sh
+bash train-gpt-2.sh # or
+bash train-llama.sh
 ````
 
 **Metis Arguments**
