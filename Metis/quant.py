@@ -226,18 +226,20 @@ class Cast2Fp4e2m1Block(BlockQuantFunc):
     @classmethod
     @torch.no_grad()
     def quant(cls, x: torch.Tensor, s: torch.Tensor):
-        # 在重塑之前检测越界情况
+        # 先重塑张量，然后检测越界情况
+        xshape = x.shape
+        x_reshaped, s_reshaped = BlockQuantFunc._reshape(x, s)
+        
+        # 检测越界情况（fp4e2m1的最大值约为6）
         fp4_max_value = 6.0
-        overflow_mask = x.abs() > (fp4_max_value * s.view(x.shape) / 2)
+        overflow_mask = x_reshaped.abs() > (fp4_max_value * s_reshaped / 2)
         overflow_elements = overflow_mask.sum().item()
         total_elements = x.numel()
         
         # 记录越界统计
         gradient_overflow_tracker.record_overflow(total_elements, overflow_elements)
         
-        xshape = x.shape
-        x, s = BlockQuantFunc._reshape(x, s)
-        return Cast2Fp4e2m1Random.quant(x, s).view(xshape)
+        return Cast2Fp4e2m1Random.quant(x_reshaped, s_reshaped).view(xshape)
     
     @classmethod
     @torch.no_grad()
