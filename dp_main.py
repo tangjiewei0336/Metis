@@ -11,6 +11,7 @@ from torch.nn.parallel.distributed import DistributedDataParallel as DDP
 from transformers import get_linear_schedule_with_warmup
 from torch.utils.tensorboard import SummaryWriter
 from Metis import BitLinear
+from Metis.quant import gradient_overflow_tracker, log_gradient_overflow_summary
 from utils import parse
 from transformer_engine.common.recipe import Format, DelayedScaling
 import torch.distributed as dist
@@ -128,6 +129,9 @@ def train(args):
                                     torch.sum(((p + 1e-6) ** -2) * args.reg_alpha2)) * \
                                     (1 / p.shape[0] / p.shape[1] * args.reg_lambda) 
                 loss += rloss
+                
+                # 在反向传播前重置梯度越界追踪器
+                gradient_overflow_tracker.reset()
                 loss.backward()
                 
             else:
@@ -136,13 +140,24 @@ def train(args):
                 continue
             
 
+            # 获取梯度越界统计信息
+            overflow_stats = gradient_overflow_tracker.get_stats()
+            
             if args.local_rank <= 0:
                 print(f"rank: {args.local_rank}, "
                     f"epoch: {epoch}, "
                     f"batch: {train_steps}, "
                     f"loss: {acc_loss:.3f}, "
-                    f"r-loss: {rloss.item() + acc_loss:.3f}"
+                    f"r-loss: {rloss.item() + acc_loss:.3f}, "
+                    f"grad_overflow_rate: {overflow_stats['overflow_rate']:.4f}, "
+                    f"batch_overflow_rate: {overflow_stats['batch_overflow_rate']:.4f}"
                     )
+                
+                # 记录梯度越界统计到tensorboard
+                writer.add_scalar("gradient_overflow/element_overflow_rate", overflow_stats['overflow_rate'], train_steps)
+                writer.add_scalar("gradient_overflow/batch_overflow_rate", overflow_stats['batch_overflow_rate'], train_steps)
+                writer.add_scalar("gradient_overflow/total_overflow_elements", overflow_stats['overflow_elements'], train_steps)
+                writer.add_scalar("gradient_overflow/total_elements", overflow_stats['total_elements'], train_steps)
             # f"grad_norm: {g}"
             
             g = 0
@@ -169,6 +184,10 @@ def train(args):
             train_steps += 1
             if args.train_steps == batch + 1:
                 break
+    
+    # 在训练结束时输出梯度越界统计摘要
+    if args.local_rank <= 0:
+        log_gradient_overflow_summary()
 
 
 if __name__ == "__main__":

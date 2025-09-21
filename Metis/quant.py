@@ -2,6 +2,76 @@
 import torch
 
 
+# 全局变量用于记录梯度越界统计
+class GradientOverflowTracker:
+    def __init__(self):
+        self.reset()
+    
+    def reset(self):
+        """重置统计计数器"""
+        self.total_elements = 0
+        self.overflow_elements = 0
+        self.overflow_count = 0
+        self.total_quantizations = 0
+    
+    def record_overflow(self, total_elements, overflow_elements):
+        """记录一次量化操作的越界情况"""
+        self.total_elements += total_elements
+        self.overflow_elements += overflow_elements
+        self.total_quantizations += 1
+        if overflow_elements > 0:
+            self.overflow_count += 1
+    
+    def get_stats(self):
+        """获取统计信息"""
+        if self.total_elements == 0:
+            return {
+                'overflow_rate': 0.0,
+                'batch_overflow_rate': 0.0,
+                'total_elements': 0,
+                'overflow_elements': 0,
+                'total_quantizations': 0,
+                'overflow_batches': 0
+            }
+        
+        return {
+            'overflow_rate': self.overflow_elements / self.total_elements,
+            'batch_overflow_rate': self.overflow_count / self.total_quantizations,
+            'total_elements': self.total_elements,
+            'overflow_elements': self.overflow_elements,
+            'total_quantizations': self.total_quantizations,
+            'overflow_batches': self.overflow_count
+        }
+
+# 全局梯度越界追踪器
+gradient_overflow_tracker = GradientOverflowTracker()
+
+
+def get_gradient_overflow_stats():
+    """获取梯度越界统计信息的便捷函数"""
+    return gradient_overflow_tracker.get_stats()
+
+
+def reset_gradient_overflow_stats():
+    """重置梯度越界统计信息的便捷函数"""
+    gradient_overflow_tracker.reset()
+
+
+def log_gradient_overflow_summary():
+    """打印梯度越界统计摘要"""
+    stats = gradient_overflow_tracker.get_stats()
+    print("\n" + "="*50)
+    print("梯度越界统计摘要 (Gradient Overflow Summary)")
+    print("="*50)
+    print(f"总量化操作次数: {stats['total_quantizations']}")
+    print(f"总元素数量: {stats['total_elements']}")
+    print(f"越界元素数量: {stats['overflow_elements']}")
+    print(f"元素越界率: {stats['overflow_rate']:.4f} ({stats['overflow_rate']*100:.2f}%)")
+    print(f"批次越界率: {stats['batch_overflow_rate']:.4f} ({stats['batch_overflow_rate']*100:.2f}%)")
+    print(f"越界批次数量: {stats['overflow_batches']}/{stats['total_quantizations']}")
+    print("="*50 + "\n")
+
+
 class QuantFunc:
     @classmethod
     @torch.no_grad()
@@ -46,8 +116,18 @@ class Cast2Fp4e2m1(QuantFunc):
     @torch.no_grad()
     def quant(cls, x: torch.Tensor, s: torch.Tensor):
         xsign = x.sign()
-        x = x.abs() / (s / 2)
+        x_abs = x.abs()
         
+        # 检测越界情况（fp4e2m1的最大值约为6）
+        fp4_max_value = 6.0
+        overflow_mask = x_abs > (fp4_max_value * s / 2)
+        overflow_elements = overflow_mask.sum().item()
+        total_elements = x.numel()
+        
+        # 记录越界统计
+        gradient_overflow_tracker.record_overflow(total_elements, overflow_elements)
+        
+        x = x_abs / (s / 2)
         
         x -= (x - 4).relu_() / 2 + (x - 8).relu_() / 4
         x.round_()
@@ -146,6 +226,15 @@ class Cast2Fp4e2m1Block(BlockQuantFunc):
     @classmethod
     @torch.no_grad()
     def quant(cls, x: torch.Tensor, s: torch.Tensor):
+        # 在重塑之前检测越界情况
+        fp4_max_value = 6.0
+        overflow_mask = x.abs() > (fp4_max_value * s.view(x.shape) / 2)
+        overflow_elements = overflow_mask.sum().item()
+        total_elements = x.numel()
+        
+        # 记录越界统计
+        gradient_overflow_tracker.record_overflow(total_elements, overflow_elements)
+        
         xshape = x.shape
         x, s = BlockQuantFunc._reshape(x, s)
         return Cast2Fp4e2m1Random.quant(x, s).view(xshape)
